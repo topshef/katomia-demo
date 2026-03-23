@@ -306,63 +306,23 @@ function withdraw(ctx, {fromId, toId, assetId}) {
 }
 
 
-function exitGame(ctx) { 
-		const { game, playerToken } = ctx
+function exit(ctx){ 
+  const { game, playerToken } = ctx
 
-    const player = game.players[playerToken]
-    if (!player) return
+  const player = game.players[playerToken]
+  if(!player) return
 
-    const playerAccounts = player.accounts
+  // clone because removeAccount mutates
+  const accounts = [...player.accounts]
 
-    // remove items offered FROM player's accounts
-    for (const other of Object.values(game.accounts)) {
+  for(const accountId of accounts)
+    removeAccount(ctx, { accountId })
 
-        const remaining = []
-
-        for (const item of other.basket) {
-
-            if (playerAccounts.includes(item.from)) {
-                const owner = game.accounts[item.from]
-                if (owner) incr(owner.assets, item.assetId)
-									
-            } else {
-                remaining.push(item)
-            }
-
-        }
-
-        other.basket = remaining
-    }
-
-    // return items sitting IN player's baskets
-    for (const accId of playerAccounts) {
-
-        const account = game.accounts[accId]
-        if (!account) continue
-
-        for (const item of account.basket) {
-
-            const owner = game.accounts[item.from]
-            if (owner) incr(owner.assets, item.assetId)
-
-        }
-
-        account.basket = []
-    }
-
-    // delete accounts
-    for (const accId of playerAccounts) {
-        delete game.accounts[accId]
-    }
-
-    // delete player
-    delete game.players[playerToken]
+  //delete player is done inside removeAccount if no accounts left
+  // delete game.players[playerToken]
 		
-		// todo broadcast event to all / active / cluster players depending on the lockRule
-		
-    return game
+  return game
 }
-
 
 
 
@@ -371,7 +331,7 @@ module.exports = {
     reject,
     withdraw,
     // toggleLock,
-    exitGame,
+    exit,
 		addAccount,
 		removeAccount,
 }

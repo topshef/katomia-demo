@@ -26,7 +26,7 @@ const {
     reject,
     withdraw,
     //toggleLock,
-    exitGame,
+    exit,
 		addAccount,
 		removeAccount,
 } = require('./katomiaActions')
@@ -59,16 +59,17 @@ function createGame(input={}){
     accounts: {},
 		txPending: {},
     nextPlayerRef: 1,
-		
+		// profile: input.profile || {},
+    
     config: {},
-    profile: {},
     permissions: {},
     economy: {}		
   }
 
   Object.assign(game, input)
   game.network = normaliseNetwork(game.network)
-	
+  game.profile ||= {}
+  
 	while(games[game.id]) game.id = generateGameId()  // defend against collision - retry if needed
 
   games[game.id] = game
@@ -183,7 +184,9 @@ function getGameMeta(gameId) {
         network: game.network,
 				visibility: game.visibility,
 				joinRule: game.joinRule,
-        lockRule: game.lockRule
+        lockRule: game.lockRule,
+        profile: game.profile || {}
+
     }
 }
 
@@ -1052,7 +1055,7 @@ module.exports = {
     reject,
     withdraw,
     toggleLock,
-    exitGame,
+    exit,
     getState,
 		getTxPending,
 		

@@ -37,9 +37,12 @@ async function handleCreateGame(req,res){
 
 router.post('/create', (req,res) => {
 
-  const body = req.body ?? {}
+  const body = req.body || {}
 
-  const game = gameManager.createGame(req.body)
+  // ❌ remove user control of id
+  delete body.id
+
+  const game = gameManager.createGame(body)
 
   res.json({
     ok: true,
