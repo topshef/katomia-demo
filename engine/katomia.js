@@ -16,6 +16,12 @@ const {
 
 
 const {
+    computePchFromDeal,
+  
+} = require('./kpoolHelpers')
+
+
+const {
     offer,
     reject,
     withdraw,
@@ -209,21 +215,20 @@ function joinGame(gameId, playerToken, playerName){
 
 
 
-function getTxPending(gameId) {
-    const game = games[gameId]
-    if (!game) return
+function getTxPending(game) {
     const pending = []
 		for (let [pch, rec] of Object.entries(game.txPending)) {
 				pending.push({
 					txid: rec.txid,
 					txhex: rec.hex2,
 					pch: rec.deal?.pch,
-					pchbasis: rec.deal?.pchbasis
+					pchbasis: rec.deal?.pchbasis,
+					lifecycle: rec.lifecycle,
 				})
 						
 		}
+		elog(pending, `pending gameId=${game.id}`, "dev16")
 		return pending
-		elog(pending, `pending gameId=${gameId}`, "dev16")
 }
 
 function getState(gameId) {
@@ -291,7 +296,7 @@ function getState(gameId) {
 
 
 		const tx = {}
-		tx.pending = getTxPending(gameId)
+		tx.pending = getTxPending(game)
 		
 
     return {
@@ -562,7 +567,7 @@ async function postClusters(game, clusters){
 }
 
 // hook to kpool - temp placeholder
-global.katomiaOnTxResult = ({ txid, pch, status }) => {
+if(0) global.zzzkatomiaOnTxResult = ({ txid, pch, status }) => {
 	// note this wont pick up expired.. a separate polling is needed to cleanup expired txPending
 	// using eg kpool/txRead?network=mainnet&txid=0.0.10177400@1773827521.166751072
 	// "comboStatus": "Expired",
@@ -589,42 +594,89 @@ resolveTx status = SUCCESS txid pch= 0.0.10177400@1773828796.739432082 e560c6
   }
 }
 
+global.katomiaOnTxResult = ({ txid, pch, status, isFinalStatus }) => {
+	elog({txid, pch, status, isFinalStatus}, `resolveTx status = ${status} txid pch= ${txid} ${pch}`, "dev16")
 
-function resolveTxSuccess(game, pch){
-	
-    const pending = game.txPending[pch].raw
-    if(!pending) return
+	const pchShort = pch?.slice(0, 6)
+	if (!pchShort) return
 
-    for(const item of pending){
+	for (const game of Object.values(games)) {
+		const pending = game.txPending[pchShort]
+		if (!pending) continue
 
-        const to = game.accounts[item.to]
-        if(!to) continue
+		patchTxLifecycle(game, pchShort, {
+			status: status || pending.lifecycle?.status || 'pending',
+			isFinalStatus: Boolean(isFinalStatus)
+		})
 
-        incr(to.assets, item.assetId, item.amount)
-    }
-		
-		elog(game.txPending[pch], `resolveTxSuccess pch=${pch}`, "dev16")
-		
-    delete game.txPending[pch]
+		const statusNorm = String(status || '').toUpperCase()
+
+		elog({statusNorm, pchShort, txid, hasPending: !!pending}, 'status check', 'dev16')
+		if (statusNorm === 'SUCCESS') {
+			resolveTxSuccess(game, pchShort)
+			continue
+		}
+
+		if (isFinalStatus) {
+			resolveTxFailed(game, pchShort)
+		}
+	}
 }
 
-function resolveTxFailed(game, pch){
+function patchTxLifecycle(game, pch, patch = {}) {
+	const rec = game.txPending[pch]
+	if (!rec) return null
 
-    const pending = game.txPending[pch]
-    if(!pending) return
+	rec.lifecycle ||= {
+		status: 'pending',
+		isFinalStatus: false,
+		lastUpdated: Date.now()
+	}
 
-    for(const item of pending){
+	Object.assign(rec.lifecycle, patch, {
+		lastUpdated: Date.now()
+	})
 
-        const owner = game.accounts[item.from]
-        if(!owner) continue
-
-        incr(owner.assets, item.assetId, item.amount)
-    }
-		elog(game.txPending[pch], `resolveTxFailed pch=${pch}`, "dev16")
-
-    delete game.txPending[pch]
+	return rec
 }
 
+function resolveTxSuccess(game, pch) {
+	const pending = game.txPending[pch]
+	if (!pending?.raw) return
+
+	patchTxLifecycle(game, pch, {
+		status: 'SUCCESS',
+		isFinalStatus: true
+	})
+
+	for (const item of pending.raw) {
+		const to = game.accounts[item.to]
+		if (!to) continue
+		incr(to.assets, item.assetId, item.amount)
+	}
+
+	elog(game.txPending[pch], `resolveTxSuccess pch=${pch}`, "dev16")
+	delete game.txPending[pch]
+}
+
+function resolveTxFailed(game, pch) {
+	const pending = game.txPending[pch]
+	if (!pending?.raw) return
+
+	patchTxLifecycle(game, pch, {
+		status: pending.lifecycle?.status || 'FAILED',
+		isFinalStatus: true
+	})
+
+	for (const item of pending.raw) {
+		const owner = game.accounts[item.from]
+		if (!owner) continue
+		incr(owner.assets, item.assetId, item.amount)
+	}
+
+	elog(game.txPending[pch], `resolveTxFailed pch=${pch}`, "dev16")
+	delete game.txPending[pch]
+}
 
 const { dealCreateTx } = require('./deal')
 const { initializeClient } = require('./functions')
@@ -658,10 +710,16 @@ async function postCluster(game, cluster){
     // const txid = shortHash(JSON.stringify(rawLines))
 				
 		// const raw = game.txPending[txid].raw
-		
-		const rawDeal = buildDealFromRaw(game, rawLines)
-		const deal = normaliseDeal(rawDeal)
-		const pchShort = deal.pch.slice(0,6)
+		const deal = buildDealFromRaw(game, rawLines)
+		elog(deal, 'KATOMIA DEAL BEFORE PCH ZXXXXXXXXXXXXXXXXXXXXXXXXX', 'devPCH')
+		const { pch, pchbasis } = computePchFromDeal(deal)
+
+		// attach (non-mutating style if you want, but keep it simple)
+		deal.pch = pch
+		deal.pchbasis = pchbasis
+
+		const pchShort = pch.slice(0,6)
+
 		// elog({rawLines, rawDeal,deal}, "xxxxxxxxxxxxx", "dev15")
 		//shoudl we use pch as the key? what if same tx intent is tried more than once at different times? 
 		// could eb a spanner.. try it
@@ -682,7 +740,10 @@ async function postCluster(game, cluster){
 			
 		}
 		
-		game.txPending[pchShort] =  {txid, raw: rawLines, deal, dealRes}
+		const now = Date.now()
+
+		const lifecycle = {status: 'pending', isFinalStatus: false, lastUpdated: now}
+		game.txPending[pchShort] =  {txid, raw: rawLines, deal, dealRes, lifecycle, createdAt: now}
 
 		//for now just recolve playnet instantly
 		if (game.network == 'playnet') resolveTxSuccess(game, pchShort)
@@ -840,89 +901,6 @@ shape that dealSignEscrow expects:
 
 */
 const crypto = require('crypto')
-
-function normaliseDeal(inputDeal){
-
-  // clone so we NEVER mutate input
-  const deal = structuredClone(inputDeal)
-
-  // ensure arrays exist
-  deal.addHbarTransfer ||= []
-  deal.addTokenTransfer ||= []
-  deal.addNftTransfer ||= []
-
-  // remove zero values (FT + HBAR only)
-  deal.addTokenTransfer = deal.addTokenTransfer.filter(x => x.value)
-  deal.addHbarTransfer  = deal.addHbarTransfer.filter(x => x.value)
-
-  // canonical sort
-  const sorted = sortDealCanonical(deal)
-
-  // build hash basis (ONLY economic intent)
-  const basisObj = {
-    network: sorted.network,
-    addHbarTransfer: sorted.addHbarTransfer,
-    addTokenTransfer: sorted.addTokenTransfer,
-    addNftTransfer: sorted.addNftTransfer
-  }
-
-  const pchbasis = JSON.stringify(sortKeys(basisObj))
-
-  const pch = crypto
-    .createHash('sha256')
-    .update(pchbasis)
-    .digest('hex')
-
-  // return full deal + metadata (no mutation of input)
-  return {
-    ...inputDeal,
-    pch,
-    pchbasis
-  }
-}
-
-
-function sortDealCanonical(deal){
-
-  const out = structuredClone(deal)
-
-  out.addNftTransfer?.sort((a,b) =>
-    a.tokenId.localeCompare(b.tokenId) ||
-    a.serial - b.serial ||
-    a.sender.localeCompare(b.sender) ||
-    a.receiver.localeCompare(b.receiver)
-  )
-
-  out.addTokenTransfer?.sort((a,b) =>
-    a.tokenId.localeCompare(b.tokenId) ||
-    a.accountId.localeCompare(b.accountId) ||
-    a.value - b.value
-  )
-
-  out.addHbarTransfer?.sort((a,b) =>
-    a.accountId.localeCompare(b.accountId) ||
-    a.value - b.value
-  )
-
-  return out
-}
-
-function sortKeys(obj){
-  if(Array.isArray(obj))
-    return obj.map(sortKeys)
-
-  if(obj && typeof obj === 'object'){
-    const out = {}
-    for(const key of Object.keys(obj).sort())
-      out[key] = sortKeys(obj[key])
-    return out
-  }
-
-  return obj
-}
-
-
-
 
 
 function shortHash(str){

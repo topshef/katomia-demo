@@ -1,4 +1,6 @@
 
+const { elog, eclog } = require('./elog')
+
 
 const { 
 	Ctx,

@@ -33,7 +33,6 @@ function startCleanupTxPending(){
         if(!tx?.txid) continue
 				
 				tx.createdAt ||= Date.now()
-				
 
         // ---- expiry check ----
         const now = Date.now()
@@ -64,19 +63,35 @@ function startCleanupTxPending(){
           // const data = await res.json()
 
 					//but its internal
-					const data = await txRead({
-						query: {
+					const query = {
 							network: game.network,
 							txid: tx.txid,
-							checksum: pch,
+							// checksum: pch,
+							checksum: '*',  //check all for now, until txSave uses same pch as katomia !!!
 							mirror: true
 						}
-					})
-
+					const data = await txRead({query})
+					
+					elog({query,data}, `startCleanupTxPending ${pch}`, "dev17")
+					
 					if(typeof data === 'string') continue
+					
+					tx.lifecycle ||= {
+						status: 'pending',
+						isFinalStatus: false,
+						lastUpdated: Date.now()
+					}					
+					
+					tx.lifecycle.status = data?.comboStatus || tx.lifecycle.status
+					tx.lifecycle.isFinalStatus = Boolean(data?.isStatusFinal)
+					tx.lifecycle.lastUpdated = Date.now()
+					
           if(!data?.isStatusFinal) continue
+					
+					const statusNorm = String(data.comboStatus || '').toUpperCase()
 
-          if(data.comboStatus === "SUCCESS")
+
+          if(statusNorm === "SUCCESS")
             resolveTxSuccess(game, pch)
           else
             resolveTxFailed(game, pch)
@@ -95,7 +110,8 @@ function startCleanupTxPending(){
 // ---- helper ----
 function alertTxPending(status, game, tx, pch, age){
   kmon(
-    'hapi katomia cleanup txPending',
+    // 'hapi katomia cleanup txPending',
+    'hapi katomia warning',
     status,
     {
       network: game.network,
