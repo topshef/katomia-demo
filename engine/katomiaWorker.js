@@ -28,7 +28,7 @@ function startCleanupTxPending(){
       for(const pch in game.txPending){
 
         const tx = game.txPending[pch]
-				elog({pch, tx, INTERVAL, WARN_AFTER_MS, FAIL_AFTER_MS}, `startCleanupTxPending ${pch}`, "dev17")
+				eclog({pch, tx, INTERVAL, WARN_AFTER_MS, FAIL_AFTER_MS}, `startCleanupTxPending ${pch}`, "dev17")
 
         if(!tx?.txid) continue
 				

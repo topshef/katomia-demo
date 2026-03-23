@@ -16,7 +16,7 @@ const {
 
 
 const {
-    computePchFromDeal,
+    computePch,
   
 } = require('./kpoolHelpers')
 
@@ -712,7 +712,7 @@ async function postCluster(game, cluster){
 		// const raw = game.txPending[txid].raw
 		const deal = buildDealFromRaw(game, rawLines)
 		elog(deal, 'KATOMIA DEAL BEFORE PCH ZXXXXXXXXXXXXXXXXXXXXXXXXX', 'devPCH')
-		const { pch, pchbasis } = computePchFromDeal(deal)
+		const { pch, pchbasis } = computePch(deal)
 
 		// attach (non-mutating style if you want, but keep it simple)
 		deal.pch = pch
