@@ -658,7 +658,7 @@ async function postCluster(game, cluster){
     // const txid = shortHash(JSON.stringify(rawLines))
 				
 		// const raw = game.txPending[txid].raw
-
+		
 		const rawDeal = buildDealFromRaw(game, rawLines)
 		const deal = normaliseDeal(rawDeal)
 		const pchShort = deal.pch.slice(0,6)
@@ -668,12 +668,25 @@ async function postCluster(game, cluster){
 		
 		const body = {deal, kpool: true}
 		const query = {}
-		const client = initializeClient(game.network)
-
-		const dealRes = await dealCreateTx(client, {body, query})
-		const txid = dealRes.txid
-
+		
+		let txid
+		let dealRes
+		if (game.network == 'playnet') {
+			txid = 'n/a for playnet'
+			dealRes = 'n/a for playnet'
+			
+		} else {
+			const client = initializeClient(game.network)
+			dealRes = await dealCreateTx(client, {body, query})
+			txid = dealRes.txid
+			
+		}
+		
 		game.txPending[pchShort] =  {txid, raw: rawLines, deal, dealRes}
+
+		//for now just recolve playnet instantly
+		if (game.network == 'playnet') resolveTxSuccess(game, pchShort)
+			
 		
 		// deal.pch ||= shortHash(JSON.stringify(rawLines))  // aim to have this set upfront 
     
