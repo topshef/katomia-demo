@@ -207,3 +207,77 @@ async function enrichVisibleAssets(){
 		render()
 	}
 }
+
+
+
+// simple cache (same pattern as assets)
+window.accountLabelCache ||= {}
+window.accountLabelPending ||= new Set()
+
+async function getAccountLabelXProof(network, accountId){
+
+  if (network != 'mainnet') return
+  const params = {
+    network,
+    // accountId
+  }
+
+  // 2 types shoudl be same but shape differs
+  // https://xproof.live/domain/query/0.0.27500
+  // https://xproof.live/api/?accountId=0.0.27500
+  // return await Kache.getData("https://xproof.live/api/", params, 86400)
+  return await Kache.getData(`https://xproof.live/domain/query/${accountId}`, params, 86400)
+  
+}
+
+async function enrichAccountLabel(network, accountId){
+
+  const data = await getAccountLabelXProof(network, accountId)
+  const latest = data?.links?.[0]
+  
+  // console.log("getAccountLabelXProof",data)
+  const label = latest.domain + ' | ' + latest.name || null
+  glog(`getAccountLabelXProof|${latest.domain}`,{label, data})
+
+  return {label}
+}
+
+async function enrichVisibleAccounts(){
+
+  if(!game?.network) return
+  if(!state?.accounts) return
+
+  const jobs = []
+
+  Object.values(state.accounts).forEach(account => {
+
+    const id = account.id.split(":")[1] || null
+    if (!id) console.warn('PH93844 missing account id', account.id)
+
+    if(window.accountLabelCache[id]) return
+    if(window.accountLabelPending.has(id)) return
+
+    window.accountLabelPending.add(id)
+
+    jobs.push(
+      (async () => {
+        try{
+          const enriched = await enrichAccountLabel(game.network, id)
+
+          window.accountLabelCache[id] = enriched.label
+        }
+        catch(err){
+          console.error("account label enrichment failed", id, err)
+        }
+        finally{
+          window.accountLabelPending.delete(id)
+        }
+      })()
+    )
+  })
+
+  if(jobs.length){
+    await Promise.all(jobs)
+    render()
+  }
+}
