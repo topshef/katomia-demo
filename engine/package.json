@@ -1,0 +1,26 @@
+{
+  "name": "katomia-demo",
+  "version": "1.0.0",
+  "description": "Katomia demo (engine = API + websocket)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@hashgraph/sdk": "^2.80.0",
+    "@hashgraph/proto": "^2.25.0",
+    "express": "^4.22.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.0",
+    "ws": "^8.19.0",
+
+    "tweetnacl": "^1.0.3",
+    "elliptic": "^6.6.1",
+    "@ethersproject/abi": "^5.7.0",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

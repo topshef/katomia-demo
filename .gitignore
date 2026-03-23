@@ -21,3 +21,6 @@
 
 test*
 zz*
+
+node_modules
+!package.json
