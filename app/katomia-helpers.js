@@ -345,8 +345,19 @@ function openAssetModal(assetId, fromAccountId, available){
     img.src = thumb
     preview.appendChild(img)
   }
-
-  nameEl.textContent = getAssetDisplay(assetId, available)
+  
+ 
+  const displayTokenLabel = assetId.replace('#', ' #')
+  const tokenSerial = assetId.replace('#', '-')
+  const network = game?.network || ""
+  
+  const url = `/m/?productId=${network};${tokenSerial}`
+  
+  nameEl.innerHTML = `
+    <a href="${url}" target="_blank" style="text-decoration:none;color:inherit;">
+      ${getAssetDisplay(assetId, available)} 🪙 ${displayTokenLabel}
+    </a>
+  `
 
   if(availableEl)
     availableEl.textContent = displayAvailable
@@ -370,12 +381,24 @@ function openAssetModal(assetId, fromAccountId, available){
 
 		const locked = acc.mode === "lock"
 		const self = acc.id === fromAccountId
-
-		el.textContent =
-			(acc.label || acc.id) +
-			(self ? " (you)" : "") +
-			(locked ? " 🔒" : "")
-	
+         
+        const baseLabel =
+          (acc.label || acc.id) +
+          (self ? " (you)" : "") +
+          (locked ? " 🔒" : "")
+        
+        const id = acc.id.split(":")[1] || acc.id
+        const xLabel = window.accountLabelCache?.[id]
+        
+        if(xLabel){
+          el.innerHTML = `
+            <div>${baseLabel}</div>
+            <div class="account-xproof-label">${xLabel}</div>
+          `
+        } else {
+          el.textContent = baseLabel
+        }  
+  
 
 		const colour = getPlayerColour(acc.playerId)
 		el.style.borderLeftColor = colour

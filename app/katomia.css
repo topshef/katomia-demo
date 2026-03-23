@@ -103,25 +103,33 @@
 			margin:0;
 		}
 		
-		.asset:hover::after{
-			content: attr(data-asset-name);
-			position:absolute;
-			left:0;
-			bottom:100%;
+    .asset:hover::after{
+      content: attr(data-asset-name) " 🪙 " attr(data-asset-id);
 
-			display:block;
+      position:absolute;
+      left:0;
+      bottom:100%;
 
-			background:#222;
-			color:#fff;
+      display:block;
 
-			padding:4px 6px;
-			font-size:11px;
-			line-height:1.2;
+      background:#222;
+      color:#fff;
 
-			white-space:nowrap;
+      padding:6px 8px;
+      font-size:11px;
+      line-height:1.2;
 
-			z-index:1000;
-		}
+      white-space:nowrap;
+
+      border-radius:6px;                /* softer corners */
+      box-shadow:0 4px 10px rgba(0,0,0,0.18);  /* floating feel */
+
+      transform:translateY(-4px);       /* slight lift */
+
+      zzbackground:#2a2a2a;
+
+      z-index:1000;
+    }
 
     body{
       background: var(--bg-color);
@@ -850,3 +858,61 @@ zz-distracting-body[data-network="playnet"]{
   border-color:#4CAF50;
   box-shadow:0 0 0 2px rgba(76,175,80,0.15);
 }
+
+
+
+/* LE = horizontal stack only */
+.asset.asset-le{
+  position: relative;
+}
+
+/* base image */
+.asset.asset-le .asset-thumb{
+  position: relative;
+  z-index: 3;
+}
+
+/* ≥2 (base layer always present) */
+.asset.asset-le[data-qty]:not([data-qty="1"]) .asset-thumb{
+  box-shadow:
+    -6px 2px 0 rgba(0,0,0,0.15);
+}
+
+/* ≥3 → add second layer */
+.asset.asset-le[data-qty]:not([data-qty="1"]):not([data-qty="2"]) .asset-thumb{
+  box-shadow:
+    -6px 2px 0 rgba(0,0,0,0.15),
+    -12px 4px 0 rgba(0,0,0,0.10);
+}
+
+/* ≥4 → add third layer (cap here) */
+.asset.asset-le[data-qty]:not([data-qty="1"]):not([data-qty="2"]):not([data-qty="3"]) .asset-thumb{
+  box-shadow:
+    -6px 2px 0 rgba(0,0,0,0.15),
+    -12px 4px 0 rgba(0,0,0,0.10),
+    -18px 6px 0 rgba(0,0,0,0.06);
+}
+
+/* force LE assets to occupy more layout width */
+
+.asset.asset-le[data-qty="2"]{
+  width: calc(var(--thumb-size) + 8px);
+}
+
+.asset.asset-le[data-qty="3"]{
+  width: calc(var(--thumb-size) + 14px);
+}
+
+.asset.asset-le[data-qty="4"]{
+  width: calc(var(--thumb-size) + 20px);
+}
+
+.zzasset.asset-le{
+  outline: 2px solid red;
+  background: rgba(255,0,0,0.05);
+}
+
+.asset.asset-le{
+  margin-left: 20px !important;
+}
+

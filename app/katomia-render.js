@@ -182,6 +182,24 @@ function getFastThumb(url, imgEl){
 }
 
 
+    function applyAssetClasses(assetEl, assetId, amount){
+
+      const meta = getAssetMeta(assetId)
+      if(!meta) return
+
+      const decimals = Number(meta?.token_class?.decimals || 0)
+
+      // LE = zero-decimal fungible with quantity
+      if(decimals === 0 && amount > 1){
+        assetEl.classList.add("asset-le")
+        assetEl.dataset.qty = amount
+        return
+      }
+
+      // future rules go here ↓
+      // e.g. rare, legendary, etc
+
+    }
 
 
 		function makeAssetEl({
@@ -219,11 +237,22 @@ function getFastThumb(url, imgEl){
 				if(useThumbnail){
 					el.dataset.thumbKey = thumb // todo change to tokenId-thumb
 					el.classList.add("thumb-only")
-					
-					const img = document.createElement("img")
-					img.className = "asset-thumb"
-					img.src = getFastThumb(thumb, img)
-					img.decoding = "async"
+                    
+          const img = document.createElement("img")
+          img.className = "asset-thumb"
+          img.src = getFastThumb(thumb, img)
+          img.decoding = "async"
+
+          img.onerror = () => {
+            img.onerror = null   // prevent loop
+            img.src = "data:image/svg+xml;utf8,\
+              <svg xmlns='http://www.w3.org/2000/svg' width='96' height='96'>\
+              <rect width='100%' height='100%' rx='12' fill='%23f2f2f2'/>\
+              <text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' \
+              font-size='40' font-family='Arial, sans-serif' fill='%23bbb'>?</text>\
+              </svg>"
+            }
+          
 					el.prepend(img)
 
 				}
@@ -261,6 +290,9 @@ function getFastThumb(url, imgEl){
 		duplicate counts rendered from asset map
 		*/
 		function renderStoreAsset(account, container){
+      
+      const network = game?.network || ""
+
 			const mine = isMyAccount(account)
 			const rendered = []
 
@@ -279,6 +311,26 @@ function getFastThumb(url, imgEl){
 
 			const thumbGroups = {}
 
+
+      rendered.sort((a, b) => {
+
+        // 1. non-thumbnail first
+        if(!a.thumbKey && b.thumbKey) return -1
+        if(a.thumbKey && !b.thumbKey) return 1
+
+        // 2. both non-thumb → stable by assetId
+        if(!a.thumbKey && !b.thumbKey)
+          return a.assetId.localeCompare(b.assetId)
+
+        // 3. both have thumbs → group by thumb
+        const t = a.thumbKey.localeCompare(b.thumbKey)
+        if(t !== 0) return t
+
+        // 4. fallback stable order inside group
+        return a.assetId.localeCompare(b.assetId)
+      })
+
+
 			rendered.forEach(item => {
 				if(!item.thumbKey) return
 
@@ -295,6 +347,8 @@ function getFastThumb(url, imgEl){
 					clickable: mine,
 					selected: isSelected(item.assetId, account.id, null)
 				})
+
+        applyAssetClasses(assetEl, item.assetId, item.amount)
 
 				const group = item.thumbKey ? thumbGroups[item.thumbKey] : null
 
@@ -315,7 +369,18 @@ function getFastThumb(url, imgEl){
 				}
 
 				if(mine){
-					assetEl.onclick = () => {
+          assetEl.onclick = (e) => {
+
+            // 🔥 modifier click → open asset page
+            if(e.ctrlKey || e.metaKey){
+              const tokenSerial = assetEl.dataset.assetId.replace("#", "-")
+              const url = `/m/?productId=${network};${tokenSerial}`
+              window.open(url, "_blank")
+              return
+            }            
+            
+            
+            
 						if(viewMode === "merged"){
 							openAssetModal(item.assetId, account.id, item.amount)
 							return
@@ -372,6 +437,8 @@ function getFastThumb(url, imgEl){
 					reservedItem.toAccountId
 				)
 			})
+      
+      applyAssetClasses(assetEl, reservedItem.assetId, reservedItem.amount || 1)
 
 			//for css hover
 			assetEl.dataset.assetId = reservedItem.assetId
@@ -448,6 +515,8 @@ function getFastThumb(url, imgEl){
         basket: true,
         clickable
       })
+
+      applyAssetClasses(assetEl, item.assetId, amount)
 
 			//for css hover
 			assetEl.dataset.assetId = item.assetId
@@ -779,6 +848,8 @@ function getFastThumb(url, imgEl){
 
         const title = game.profile?.name || ""
 
+        const joinText = String(game.joinRule || "").trim()
+
         gameMetaEl.innerHTML = `
           <div class="game-title-row">
             <div class="game-network">${game.network}</div>
@@ -788,7 +859,7 @@ function getFastThumb(url, imgEl){
           <div class="game-meta-row">
             <span>ID: ${game.id}</span>
             <span>Visibility: ${game.visibility}</span>
-            <span>Join: ${JSON.stringify(game.joinRule)}</span>
+            ${joinText ? `<span>Join: ${joinText}</span>` : ""}
             <span>Lock: ${game.lockRule}</span>
           </div>
         `
