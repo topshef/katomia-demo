@@ -727,7 +727,9 @@ async function postCluster(game, cluster){
 		//shoudl we use pch as the key? what if same tx intent is tried more than once at different times? 
 		// could eb a spanner.. try it
 		
-		const body = {deal, kpool: true}
+    const delayseconds = game.config?.txDelaySeconds ?? 60
+    const startseconds = Math.floor(Date.now() / 1000) + delayseconds
+		const body = {deal, startseconds, kpool: true}
 		const query = {}
 		
 		let txid
@@ -738,6 +740,7 @@ async function postCluster(game, cluster){
 			
 		} else {
 			const client = initializeClient(game.network)
+      
 			dealRes = await dealCreateTx(client, {body, query})
 			txid = dealRes.txid
 			
