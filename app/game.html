@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="stylesheet" href="katomia.css" />
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <title>katomia</title>
+
+  <style>
+		
+  </style>
+</head>
+
+<body>
+
+	<div id="notifications"></div>
+
+  <div class="app-banner">
+    <div class="app-banner-inner">
+      <div class="app-logo"></div>
+      <h2>Katomia marketplace 🍎🥬🥕</h2>
+    </div>
+  </div>
+
+  <div id="gameMeta" class="game-meta"></div>
+
+  <div class="controls">
+    <label>
+      <input id="accountLabelInput" placeholder="Account eg 12345" />
+    </label>
+
+    <button id="addAccountBtn">
+      <i class="fa-solid fa-plus"></i> Add account
+    </button>
+
+    <label>
+      <input type="checkbox" id="showTradingAccounts" />
+      Show trading accounts only
+    </label>
+		<label>
+			<input type="checkbox" id="showTradedAssets"/>
+			Show traded assets only
+		</label>
+
+		<label class="desktop-toggle">
+			<input type="checkbox" id="viewToggle" />
+			🖥️
+		</label>
+
+
+  </div>
+
+
+	<div class="hint">
+
+
+		<span class="hint-desktop">
+			Desktop: Drag & drop to move assets.
+		</span>
+
+		<span class="hint-mobile">
+			Mobile: Tap an asset to see options.
+		</span>
+
+		<span class="hint-both">
+			Tap trading items to reject/withdraw.
+		</span>
+
+		<span class="hint-both">
+			When all required parties have "Locked", a transaction will be created ready for signing.
+		</span>
+
+	</div>
+
+  <div id="header" class="header">
+    <div>Account</div>
+    <div>🔁/🔒</div>
+    <div>🏪 Store (available)</div>
+    <div>📌 Reserved (to send)</div>
+    <div>🧺🛒 Basket (receive)</div>
+  </div>
+
+	<div id="game"></div>
+
+	<div id="assetModal" class="asset-modal hidden">
+		<div class="asset-modal-card">
+			<div id="assetModalClose" class="asset-modal-close">✕</div>
+
+			<div id="assetModalPreview" class="asset-modal-preview"></div>
+
+			<div id="assetModalName" class="asset-modal-name"></div>
+
+			<div class="asset-modal-amount-row">
+
+				<span class="asset-modal-input">
+					<label>Send amount</label>
+					<input id="assetModalAmount" type="number" value="1" min="1">
+				</span>
+			</div>
+
+			<br>
+			<div>Choose a basket 🧺🛒</div>
+			<div id="assetModalTargets" class="asset-modal-targets"></div>
+
+		</div>
+	</div>
+
+<div id="exitGameBtn" class="exit-game-btn">🗑️</div>
+
+<script src="/m/bid/localbase.min.js"></script> <!-- beware spelling of Localbase -->
+<script type="module" data-global src="/m/tools/glog/latest/glog.js" ></script>
+<script type="module" src="/m/bid/localCacheDB.js" ></script>
+<script src="/m/bid/localCacheIFPS.js"></script> 
+<script src="/m/bid/localCacheArweave.js"></script> 
+
+
+<script type="module" src="katomia-init.js" data-glog="on"></script>
+<script src="katomia-core.js"></script>
+<script src="katomia-helpers.js"></script>
+<script src="katomia-render.js"></script>
+<script src="katomia-network.js"></script>
+<script src="katomia-enrich.js"></script>
+
+<script>
+window.addEventListener("load", () => {
+// window.addEventListener("DOMContentLoaded", () => {
+
+  const params = new URLSearchParams(location.search)
+  const autoload = params.get("autoload")
+  if(autoload && accountLabelInput && !accountLabelInput.value) {
+    accountLabelInput.value = autoload
+		addAccountBtn.click()	
+	}
+	
+  const token = localStorage.getItem("katomiaPlayerToken")
+  if(!token) return
+
+  if(typeof connect === "function"){
+    connect()
+  }
+
+})
+</script>
+
+<script>
+
+  document.getElementById("exitGameBtn").onclick = () => {
+    const ok = confirm("Exit game?\n\nThis removes your accounts and any offers you placed.")
+    if(!ok) return
+    exitGame()
+  }
+</script>
+
+<script>
+	fetch("../footer.html")
+		.then(r => r.text())
+		.then(html => {
+			document.body.insertAdjacentHTML("beforeend", html)
+		})
+</script>
+
+</body>
+
+
+</html>

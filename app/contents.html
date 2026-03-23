@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="katomia.css">
+
+
+<title>Katomia markets 🍎🥬🥕</title>
+
+<style>
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+
+/* see above imported css todo organiase*/
+body{
+  zzfont-family:sans-serif;  
+  margin:20px;
+  background:#f5f5f5;
+  color:#333;
+}
+
+h2{
+  margin-top:0;
+  margin-bottom:16px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(6,1fr);
+  background:white;
+  border-radius:8px;
+  overflow:hidden;
+}
+
+.header{
+  font-weight:600;
+  font-size:14px;
+  padding:10px 12px;
+  background:#fafafa;
+  border-bottom:1px solid #e5e5e5;
+}
+
+.row{
+  display:contents;
+}
+
+.cell{
+  padding:10px 12px;
+  border-bottom:1px solid #eee;
+  font-size:14px;
+}
+
+.row:hover .cell{
+  background:#fafafa;
+}
+
+.cell a{
+  text-decoration:none;
+  color:#0366d6;
+  font-weight:600;
+}
+
+.cell a:hover{
+  text-decoration:underline;
+}
+
+.create-market{
+  display:inline-block;
+  margin-top:18px;
+  padding:10px 16px;
+  background:#28a745;
+  color:white;
+  text-decoration:none;
+  font-weight:600;
+  border-radius:6px;
+  transition:all .15s ease;
+}
+
+.create-market:hover{
+  background:#218838;
+}
+
+/* MOBILE */
+
+@media (max-width:700px){
+
+  .grid{
+    display:block;
+    background:transparent;
+  }
+
+  .header{
+    display:none;
+  }
+
+  .row{
+    display:block;
+    background:white;
+    margin-bottom:12px;
+    border-radius:8px;
+    overflow:hidden;
+  }
+
+  .cell{
+    display:flex;
+    justify-content:space-between;
+    padding:10px 12px;
+    border-bottom:1px solid #eee;
+  }
+
+  .cell:last-child{
+    border-bottom:none;
+  }
+
+  .cell::before{
+    font-weight:600;
+    color:#666;
+    margin-right:10px;
+  }
+
+  .cell.id::before{content:"ID"}
+  .cell.name::before{content:"Name"}
+  .cell.network::before{content:"Network"}
+  .cell.visibility::before{content:"Visibility"}
+  .cell.join::before{content:"Join"}
+  .cell.lock::before{content:"Lock"}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<h2>Choose a Katomia market... 🍎🥬🥕</h2>
+
+<div id="games" class="grid">
+
+  <div class="header">ID</div>
+  <div class="header">Name</div>
+  <div class="header">Network</div>
+  <div class="header">Visibility</div>
+  <div class="header">Join rule</div>
+  <div class="header">Lock rule</div>
+
+</div>
+
+<div>
+  <a class="create-market" href="./create">
+    <i class="fa-solid fa-plus"></i> Create your own market
+  </a>
+</div>
+
+<script>
+
+const API_URL = "https://hapi2.hbar.live/live/katomia/games"
+
+function formatJoinRule(rule){
+
+  if(typeof rule === "string") return rule
+
+  if(rule && rule.rule){
+    return rule.rule + "(" + rule.params.join(",") + ")"
+  }
+
+  return ""
+}
+
+async function loadGames(){
+
+  const res = await fetch(API_URL)
+  const data = await res.json()
+
+  if(!data.ok) return
+
+  const container = document.getElementById("games")
+
+  Object.values(data.games).forEach(g => {
+
+    container.insertAdjacentHTML("beforeend",`
+      <div class="row">
+
+        <div class="cell id">
+          <a href="./game/${g.id}" target="${g.id}">${g.id}</a>
+        </div>
+
+        <div class="cell name">
+          ${g.profile?.name || ""}
+        </div>
+
+        <div class="cell network">
+          ${g.network}
+        </div>
+
+        <div class="cell visibility">
+          ${g.visibility}
+        </div>
+
+        <div class="cell join">
+          ${formatJoinRule(g.joinRule)}
+        </div>
+
+        <div class="cell lock">
+          ${g.lockRule}
+        </div>
+
+      </div>
+    `)
+
+  })
+
+}
+
+loadGames()
+
+</script>
+
+<script>
+fetch("./footer.html")
+  .then(r => r.text())
+  .then(html => {
+    document.body.insertAdjacentHTML("beforeend",html)
+  })
+</script>
+
+</body>
+</html>

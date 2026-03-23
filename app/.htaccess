@@ -1,0 +1,12 @@
+
+RewriteEngine On
+
+
+RewriteRule ^game/(.+\.(js|css))$ $1 [L,QSA]
+RewriteRule ^game/([^/]+)/?$ ?game=$1 [L,QSA,E=TRACE:TY63433]
+RewriteRule ^create/?$ ?page=create [L,QSA,E=TRACE:RJ23394]
+
+#hapi api router
+RewriteRule ^hapi/([a-z]+)/?$ hapi.php?action=$1 [L,QSA,E=TRACE:DE73672]
+
+#RewriteRule ^game/([^/]+)/?$ ?game=$1 [R=302,L]

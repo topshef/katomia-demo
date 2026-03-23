@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="katomia.css">
+<title>Create Katomia Game</title>
+
+<style>
+/* see above imported css todo organiase*/
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+
+body{
+  zzfont-family:sans-serif;
+  background:#f5f5f5;
+  margin:20px;
+}
+
+h2{
+  margin-top:0;
+}
+
+.form{
+  max-width:640px;
+  margin:auto;
+  background:white;
+  padding:26px;
+  border-radius:8px;
+}
+
+.field{
+  margin-bottom:22px;
+}
+
+label{
+  display:block;
+  font-weight:600;
+  margin-bottom:8px;
+}
+
+input[type=text]{
+  width:100%;
+  padding:9px;
+  font-size:14px;
+  border:1px solid #ccc;
+  border-radius:4px;
+}
+
+.options{
+  display:flex;
+  flex-wrap:wrap;
+  gap:18px;
+}
+
+.option{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  font-size:14px;
+}
+
+.option input{
+  margin:0;
+  cursor:pointer;
+}
+
+.explain{
+  margin-top:6px;
+  font-size:12px;
+  color:#666;
+}
+
+.advanced{
+  margin-top:28px;
+}
+
+h3{
+  margin-bottom:14px;
+  font-size:16px;
+}
+
+.create-btn{
+  margin-top:10px;
+  padding:11px 18px;
+  font-size:15px;
+  font-weight:bold;
+  color:white;
+  background:#28a745;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  box-shadow:0 2px 4px rgba(0,0,0,0.15);
+  transition:all .15s ease;
+}
+
+.create-btn:hover{
+  background:#218838;
+  transform:translateY(-1px);
+  box-shadow:0 4px 6px rgba(0,0,0,0.2);
+}
+
+.status{
+  margin-top:14px;
+  font-size:13px;
+  color:#555;
+}
+
+@media(max-width:600px){
+
+  .options{
+    flex-direction:column;
+    gap:8px;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+<div class="form">
+
+  <h2>Create your own market in Katomia 🍎🥬🥕</h2>
+
+  <div class="field">
+    <label>Game name <span class="explain">(optional)</span></label>
+    <input id="gameName" placeholder="ABC demo">
+    
+  </div>
+
+  <div class="field">
+    <label>Network</label>
+
+    <div class="options">
+      <label class="option"><input type="radio" name="network" value="playnet" checked> Playnet</label>
+      <label class="option"><input type="radio" name="network" value="testnet">         Testnet</label>
+      <label class="option"><input type="radio" name="network" value="mainnet">         Mainnet</label>
+    </div>
+
+    <div class="explain" id="networkExplain"></div>
+  </div>
+	
+
+	
+  <div class="field">
+    <label>🔁/🔒 Swap/Lock Rule</label>
+    <p class="explain">Initiate swaps once agreed between...</p>
+
+    <div class="options">
+      <label class="option"><input type="radio" name="lockRule" value="all">             All players</label>
+      <label class="option"><input type="radio" name="lockRule" value="active">          Active players</label>
+      <label class="option"><input type="radio" name="lockRule" value="cluster" checked> Any connected cluster</label>
+    </div>
+
+    <div class="explain" id="lockExplain"></div>
+  </div>
+
+  <div class="field">
+    <label>Visibility</label>
+
+    <div class="options">
+      <label class="option"><input type="radio" name="visibility" value="public" checked> Public   </label>
+      <label class="option"><input type="radio" name="visibility" value="unlisted"      > Unlisted </label>
+      <label class="option"><input type="radio" name="visibility" value="private"       > Private  </label>
+    </div>
+
+    <div class="explain" id="visibilityExplain"></div>
+  </div>
+	
+
+	<div class="field">
+		<div class="explain">
+			Access control. Leave blank to allow anyone to join. Advanced rule formats may be supported.
+		</div>
+		<input id="joinRule" value="">
+
+	</div>
+
+	<div class="field">
+		<div class="explain">
+			Admin account (optional)
+		</div>
+		<input id="admin" placeholder="Hedera account / public key">
+
+	</div>
+
+
+<button class="create-btn" id="createBtn">Create Game</button>
+
+<div class="status" id="status"></div>
+
+</div>
+
+<script>
+
+const API_URL = "./hapi/create"
+
+const explain = {
+
+	network:{
+		playnet:"For fun.. no network connections.. swaps execute immediately as players agree",
+		testnet:"For learning.. pretend 'monopoly' assets but using real wallet tools - players must sign to complete swaps.",
+		mainnet:"For real.. Hedera mainnet where real transactions and fees apply."
+	},
+
+	visibility:{
+		public:"Public games appear in listings.",
+		unlisted:"Unlisted games are hidden from listings but accessible via shared link.",
+		private:"Private games require specific join rules or permissions."
+	},
+
+	lock:{
+		all:"Every player in the entire game must agree for a swap to proceed. eg for private games when all parties are expected to participate",
+		active:"All active players must agree for a swap to proceed. Disconnected clusters can be executed atomically. eg Alice to pay Bob if Carol pays Dave",
+		cluster:"Any connected group of accounts can swap independently.",
+	}
+
+}
+
+function getRadio(name){
+return document.querySelector(`input[name="${name}"]:checked`).value
+}
+
+function updateExplain(){
+
+networkExplain.textContent =
+explain.network[getRadio("network")]
+
+visibilityExplain.textContent =
+explain.visibility[getRadio("visibility")]
+
+lockExplain.textContent =
+explain.lock[getRadio("lockRule")]
+
+}
+
+document.querySelectorAll("input[name=network]").forEach(el => el.onchange = updateExplain)
+document.querySelectorAll("input[name=visibility]").forEach(el => el.onchange = updateExplain)
+document.querySelectorAll("input[name=lockRule]").forEach(el => el.onchange = updateExplain)
+
+updateExplain()
+
+createBtn.onclick = async () => {
+
+status.textContent = "Creating game..."
+
+const payload = {
+
+//id: gameName.value.trim() || undefined,
+profile: {
+  name: gameName.value.trim() || ""
+},
+network: getRadio("network"),
+visibility: getRadio("visibility"),
+joinRule: joinRule.value,
+lockRule: getRadio("lockRule")
+
+}
+
+const adminValue = admin.value.trim()
+if(adminValue) payload.admin = adminValue
+
+try{
+
+const res = await fetch(API_URL,{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify(payload)
+})
+
+const data = await res.json()
+
+if(!data.ok){
+status.textContent = "Failed to create game"
+return
+}
+
+const id = data.gameId || data.game?.id
+
+status.textContent = "Game created. Redirecting..."
+
+window.location.href = "./game/" + id
+
+}
+catch(err){
+
+console.error(err)
+status.textContent = "Error creating game"
+
+}
+
+}
+
+</script>
+
+<script>
+	fetch("./footer.html")
+		.then(r => r.text())
+		.then(html => {
+			document.body.insertAdjacentHTML("beforeend", html)
+		})
+</script>
+
+</body>
+</html>
