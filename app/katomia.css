@@ -103,33 +103,25 @@
 			margin:0;
 		}
 		
-    .asset:hover::after{
-      content: attr(data-asset-name) " 🪙 " attr(data-asset-id);
+		.asset:hover::after{
+			content: attr(data-asset-name);
+			position:absolute;
+			left:0;
+			bottom:100%;
 
-      position:absolute;
-      left:0;
-      bottom:100%;
+			display:block;
 
-      display:block;
+			background:#222;
+			color:#fff;
 
-      background:#222;
-      color:#fff;
+			padding:4px 6px;
+			font-size:11px;
+			line-height:1.2;
 
-      padding:6px 8px;
-      font-size:11px;
-      line-height:1.2;
+			white-space:nowrap;
 
-      white-space:nowrap;
-
-      border-radius:6px;                /* softer corners */
-      box-shadow:0 4px 10px rgba(0,0,0,0.18);  /* floating feel */
-
-      transform:translateY(-4px);       /* slight lift */
-
-      zzbackground:#2a2a2a;
-
-      z-index:1000;
-    }
+			z-index:1000;
+		}
 
     body{
       background: var(--bg-color);
@@ -857,45 +849,4 @@ zz-distracting-body[data-network="playnet"]{
 #accountLabelInput:focus{
   border-color:#4CAF50;
   box-shadow:0 0 0 2px rgba(76,175,80,0.15);
-}
-
-
-/* LE = horizontal stack only */
-
-.asset.asset-le{
-  position: relative;
-}
-
-/* spacing grows with qty (simple perspective-ish cap) */
-.asset.asset-le[data-qty="2"]{ padding-left: 8px; }
-.asset.asset-le[data-qty="3"]{ padding-left: 12px; }
-.asset.asset-le[data-qty="4"]{ padding-left: 16px; }
-.asset.asset-le[data-qty="5"]{ padding-left: 18px; }
-
-
-/* base image */
-.asset.asset-le .asset-thumb{
-  position: relative;
-  z-index: 3;
-}
-
-/* ≥2 (base layer always present) */
-.asset.asset-le[data-qty]:not([data-qty="1"]) .asset-thumb{
-  box-shadow:
-    -6px 2px 0 rgba(0,0,0,0.15);
-}
-
-/* ≥3 → add second layer */
-.asset.asset-le[data-qty]:not([data-qty="1"]):not([data-qty="2"]) .asset-thumb{
-  box-shadow:
-    -6px 2px 0 rgba(0,0,0,0.15),
-    -12px 4px 0 rgba(0,0,0,0.10);
-}
-
-/* ≥4 → add third layer (cap here) */
-.asset.asset-le[data-qty]:not([data-qty="1"]):not([data-qty="2"]):not([data-qty="3"]) .asset-thumb{
-  box-shadow:
-    -6px 2px 0 rgba(0,0,0,0.15),
-    -12px 4px 0 rgba(0,0,0,0.10),
-    -18px 6px 0 rgba(0,0,0,0.06);
 }
