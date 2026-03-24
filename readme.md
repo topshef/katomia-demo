@@ -2,7 +2,7 @@
 
 A real-time coordination engine for multi-party value exchange — enabling atomic, multi-asset swaps on Hedera.
 
-👉 Try the demo: https://katomia.com
+👉 Try the demo: https://katomia.com/demo
 
 In the beginning, exchange was human — based on trust, relationships, and context.
 
